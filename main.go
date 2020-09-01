@@ -11,23 +11,25 @@ import (
 	"time"
 
 	"github.com/iotaledger/iota.go/address"
+
 	"github.com/iotaledger/iota.go/kerl"
+
 	"github.com/tyler-smith/go-bip32"
 	"github.com/tyler-smith/go-bip39"
-	"github.com/tyler-smith/go-bip44"
 )
 
 var wg = sync.WaitGroup{}
 
 func main() {
-	getInputs()
-	mnemonic := "witch collapse practice feed shame open despair creek road again ice least witch collapse practice feed shame open despair creek road again ice least"
-	//targetAddr := "WNMNYMAOBGWPNFYZHSQHNXMOOIURFWAZUVVCNVZCKNKBH9XOGWUPFRWPSFAHBMMMZKXDJJGIOTERPSEUB" // addindex #3 accountindex #8
-	targetAddr := "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC" // addindex #8 acc index #98
+	_, targetAddr := getInputs()
+	mnemonic := "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth" //targetAddr := "WNMNYMAOBGWPNFYZHSQHNXMOOIURFWAZUVVCNVZCKNKBH9XOGWUPFRWPSFAHBMMMZKXDJJGIOTERPSEUB" // addindex #3 accountindex #8
+	//targetAddr := "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC" // addindex #8 acc index #98
+	//targetAddr := "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZCCCKMCBAX" addindex #1 accindex 9
 	startTime := time.Now()
 	startSearch(mnemonic, targetAddr, 50, 0, 100, 0, 0)
 	endTime := time.Now()
 	fmt.Println(endTime.Sub(startTime))
+
 	// seed := ""
 	// var addrs = []string{}
 	// startTime := time.Now()
@@ -63,7 +65,6 @@ func generateSeeds(mnemonic string, seedChan chan mySeed, accIndexStart, accInde
 	for i := accIndexStart; i <= accIndexEnd; i++ {
 		seed := mySeed{mnemonicToSeed(mnemonic, i, 0), i, 0}
 		seedChan <- seed
-		fmt.Println(len(seedChan))
 	}
 	close(seedChan)
 	wg.Done()
@@ -99,22 +100,38 @@ func mnemonicToSeed(mnemonic string, accountIndex, pageIndex uint32) string {
 	return trytes
 }
 
-func getInputs() string {
+func getInputs() (string, string) {
 	scanner := bufio.NewScanner(os.Stdin)
-	mnemonic := getMnemonic(scanner)
-	return mnemonic
+	//mnemonic := getMnemonic(scanner)
+	addr := getTargetAddress(scanner)
+	return "", addr
 }
+func getTargetAddress(scanner *bufio.Scanner) string {
 
+	var addr string
+	for {
+		fmt.Print("Enter target address: ")
+		scanner.Scan()
+		addr = scanner.Text()
+		fmt.Println()
+		if err := address.ValidAddress(addr); err == nil {
+			break
+		}
+		fmt.Println("\n\nInvalid address entered.")
+	}
+
+	return addr[0:81]
+}
 func getMnemonic(scanner *bufio.Scanner) string {
-	var words [23]string
+	var words [24]string
 	i := 1
 	for i <= 24 {
-		fmt.Printf("Enter mnemonic word #%d:", i)
+		fmt.Printf("Enter mnemonic word #%d: ", i)
 		scanner.Scan()
 		word := scanner.Text()
 		fmt.Println()
 		if isValidWord(word) {
-			words[i] = word
+			words[i-1] = word
 			i++
 
 		} else {
