@@ -19,28 +19,35 @@ import (
 )
 
 var wg = sync.WaitGroup{}
+var scanner = bufio.NewScanner(os.Stdin)
 
 func main() {
-	// mnemonic, targetAddr := getInputs()
+
+	// mnemonic := getMnemonic()
 	mnemonic := "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth" //targetAddr := "WNMNYMAOBGWPNFYZHSQHNXMOOIURFWAZUVVCNVZCKNKBH9XOGWUPFRWPSFAHBMMMZKXDJJGIOTERPSEUB" // addindex #3 accountindex #8
-	// targetAddr := "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
-	// targetAddr := "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
-	targetAddr := "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
-	accIndexStart := 0
-	accIndexEnd := 1000
-	addrsPerSeed := 10
-	pageIndexStart := 0
-	pageIndexEnd := 0
-	startTime := time.Now()
-	matchedIndex := getMatchingIndex(mnemonic, targetAddr, addrsPerSeed, accIndexStart, accIndexEnd, pageIndexStart, pageIndexEnd)
-	deltaT := time.Now().Sub(startTime)
+	for {
+		targetAddr := getTargetAddress()
+		// targetAddr := "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
+		// targetAddr := "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
+		// targetAddr := "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
+		accIndexStart := 0
+		accIndexEnd := 100
+		addrsPerSeed := 10
+		pageIndexStart := 0
+		pageIndexEnd := 0
+		startTime := time.Now()
+		matchedIndex := getMatchingIndex(mnemonic, targetAddr, addrsPerSeed, accIndexStart, accIndexEnd, pageIndexStart, pageIndexEnd)
+		deltaT := time.Now().Sub(startTime)
 
-	if matchedIndex >= 0 {
-		fmt.Printf("\nFound matching address for ACCOUNT INDEX '%d' after %v.", matchedIndex, deltaT.Round(time.Second))
-		return
+		if matchedIndex >= 0 {
+			fmt.Printf("\nFound matching address for ACCOUNT INDEX '%d' after %v.\n", matchedIndex, deltaT.Round(time.Second))
+			return
+		}
+		fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), addrsPerSeed, accIndexStart, accIndexEnd)
+		if !again() {
+			return
+		}
 	}
-	fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), addrsPerSeed, accIndexStart, accIndexEnd)
-
 }
 
 func getMatchingIndex(mnemonic, targetAddr string, addrsPerSeed, accIndexStart, accIndexEnd, pageIndexStart, pageIndexEnd int) int {
@@ -111,14 +118,7 @@ func mnemonicToSeed(mnemonic string, accountIndex, pageIndex int) string {
 	return trytes
 }
 
-func getInputs() (string, string) {
-	scanner := bufio.NewScanner(os.Stdin)
-	mnemonic := getMnemonic(scanner)
-	addr := getTargetAddress(scanner)
-	return mnemonic, addr
-}
-
-func getTargetAddress(scanner *bufio.Scanner) string {
+func getTargetAddress() string {
 
 	var addr string
 	for {
@@ -135,7 +135,8 @@ func getTargetAddress(scanner *bufio.Scanner) string {
 	return addr[0:81]
 }
 
-func getMnemonic(scanner *bufio.Scanner) string {
+func getMnemonic() string {
+
 	var words [24]string
 	i := 1
 	for i <= 24 {
@@ -155,6 +156,17 @@ func getMnemonic(scanner *bufio.Scanner) string {
 	return strings.Join(words[:], " ")
 }
 
+func again() bool {
+
+	fmt.Print("\nDo you want to try again using the same 24 words (y/n)?: ")
+	scanner.Scan()
+	answer := scanner.Text()
+	if answer == "y" {
+		fmt.Println()
+		return true
+	}
+	return false
+}
 func isValidWord(word string) bool {
 	_, valid := bip39.GetWordIndex(word)
 	return valid
