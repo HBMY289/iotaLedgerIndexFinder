@@ -25,9 +25,9 @@ func main() {
 	mnemonic := "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth" //targetAddr := "WNMNYMAOBGWPNFYZHSQHNXMOOIURFWAZUVVCNVZCKNKBH9XOGWUPFRWPSFAHBMMMZKXDJJGIOTERPSEUB" // addindex #3 accountindex #8
 	// targetAddr := "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
 	// targetAddr := "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
-	targetAddr := "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9_" //addindex #2 accountindex 99
+	targetAddr := "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
 	accIndexStart := 0
-	accIndexEnd := 200
+	accIndexEnd := 1000
 	addrsPerSeed := 10
 	pageIndexStart := 0
 	pageIndexEnd := 0
@@ -36,7 +36,7 @@ func main() {
 	deltaT := time.Now().Sub(startTime)
 
 	if matchedIndex >= 0 {
-		fmt.Printf("\nFound matching address for account index '%d' after %v.", matchedIndex, deltaT.Round(time.Second))
+		fmt.Printf("\nFound matching address for ACCOUNT INDEX '%d' after %v.", matchedIndex, deltaT.Round(time.Second))
 		return
 	}
 	fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), addrsPerSeed, accIndexStart, accIndexEnd)
@@ -51,6 +51,7 @@ func getMatchingIndex(mnemonic, targetAddr string, addrsPerSeed, accIndexStart, 
 	matchedIndex := -1
 	wg.Add(1)
 	go generateSeeds(mnemonic, seedChan, accIndexStart, accIndexEnd, stopChan)
+
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go checkAddresses(targetAddr, seedChan, addrsPerSeed, &matchedIndex, stopChan)
@@ -160,7 +161,7 @@ func isValidWord(word string) bool {
 }
 
 func getAddrsOfSeed(seed string, addCount int) []string {
-	addrs, _ := address.GenerateAddresses(seed, 0, uint64(addCount), 2, false)
+	addrs, _ := address.GenerateAddresses(seed, 0, uint64(addCount)-1, 2, false)
 	return addrs
 }
 
