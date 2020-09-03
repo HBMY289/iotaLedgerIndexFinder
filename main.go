@@ -43,7 +43,7 @@ func main() {
 
 func getMatchingIndex(settings settings) int {
 
-	seedChan := make(chan mySeed)
+	seedChan := make(chan mySeed, 2)
 	stopChan := make(chan struct{}, 1)
 	workers := runtime.GOMAXPROCS(-1)
 	matchedIndex := -1
@@ -123,7 +123,9 @@ func getSettings() settings {
 	}
 	getMnemonic(&settings)
 	getTargetAddress(&settings)
-	getAddrsPerSeed(&settings)
+	getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
+	getIntInput(&settings.accStart, "Enter account index start")
+	getIntInput(&settings.accStart, "Enter account index stop")
 	return settings
 }
 
@@ -160,22 +162,22 @@ func getMnemonic(settings *settings) {
 	settings.mnemonic = strings.Join(words[:], " ")
 }
 
-func getAddrsPerSeed(settings *settings) {
+func getIntInput(value *int, text string) {
 	for {
-		fmt.Printf("Enter number of addresses to test per seed (press Enter for default=%d): ", settings.addrsPerSeed)
+		fmt.Printf(text+" (press Enter for default=%d): ", *value)
 		scanner.Scan()
 		input := scanner.Text()
 		if input == "" {
 			return
 		}
-		if addrs, err := strconv.Atoi(input); err == nil {
-			settings.addrsPerSeed = addrs
+		if conv, err := strconv.Atoi(input); err == nil {
+			*value = conv
 			return
 		}
 		fmt.Println("Invalid input!")
 	}
-}
 
+}
 func again() bool {
 	fmt.Print("\nDo you want to try again using the same 24 words (y/n)?: ")
 	scanner.Scan()
