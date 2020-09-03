@@ -116,8 +116,8 @@ func getSettings() settings {
 	// settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
 
 	settings.accStart = 0
-	settings.accEnd = 100
-	settings.addrsPerSeed = 30
+	settings.accEnd = 1000
+	settings.addrsPerSeed = 20
 	if len(os.Args) > 1 && os.Args[1] == "-t" {
 		return settings
 	}
@@ -125,14 +125,14 @@ func getSettings() settings {
 	getTargetAddress(&settings)
 	getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
 	getIntInput(&settings.accStart, "Enter account index start")
-	getIntInput(&settings.accStart, "Enter account index stop")
+	getIntInput(&settings.accEnd, "Enter account index stop")
 	return settings
 }
 
 func getTargetAddress(settings *settings) {
 	var addr string
 	for {
-		fmt.Printf("Enter target address: ")
+		fmt.Printf("Enter any address belonging to this Ledger account: ")
 		scanner.Scan()
 		addr = scanner.Text()
 		if err := address.ValidAddress(addr); err == nil {
