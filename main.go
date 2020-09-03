@@ -30,34 +30,37 @@ func main() {
 		// targetAddr := "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
 		// targetAddr := "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
 		// targetAddr := "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
-		accIndexStart := 0
-		accIndexEnd := 100
-		addrsPerSeed := 10
-		pageIndexStart := 0
-		pageIndexEnd := 0
+		accStart := 0
+		accEnd := 1000
+		addrsPerSeed := 20
+		pageStart := 0
+		pageEnd := 0
 		startTime := time.Now()
-		matchedIndex := getMatchingIndex(mnemonic, targetAddr, addrsPerSeed, accIndexStart, accIndexEnd, pageIndexStart, pageIndexEnd)
+		matchedIndex := getMatchingIndex(mnemonic, targetAddr, addrsPerSeed, accStart, accEnd, pageStart, pageEnd)
 		deltaT := time.Now().Sub(startTime)
 
 		if matchedIndex >= 0 {
 			fmt.Printf("\nFound matching address for ACCOUNT INDEX '%d' after %v.\n", matchedIndex, deltaT.Round(time.Second))
-			return
+			break
 		}
-		fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), addrsPerSeed, accIndexStart, accIndexEnd)
+		fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), addrsPerSeed, accStart, accEnd)
 		if !again() {
-			return
+			break
 		}
+
 	}
+	fmt.Println("\nPress Enter to close the program.")
+	scanner.Scan()
 }
 
-func getMatchingIndex(mnemonic, targetAddr string, addrsPerSeed, accIndexStart, accIndexEnd, pageIndexStart, pageIndexEnd int) int {
+func getMatchingIndex(mnemonic, targetAddr string, addrsPerSeed, accStart, accEnd, pageStart, pageEnd int) int {
 
 	seedChan := make(chan mySeed)
 	stopChan := make(chan struct{}, 1)
 	workers := runtime.GOMAXPROCS(-1)
 	matchedIndex := -1
 	wg.Add(1)
-	go generateSeeds(mnemonic, seedChan, accIndexStart, accIndexEnd, stopChan)
+	go generateSeeds(mnemonic, seedChan, accStart, accEnd, stopChan)
 
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
@@ -70,10 +73,10 @@ func getMatchingIndex(mnemonic, targetAddr string, addrsPerSeed, accIndexStart, 
 
 }
 
-func generateSeeds(mnemonic string, seedChan chan<- mySeed, accIndexStart, accIndexEnd int, stopChan <-chan struct{}) {
+func generateSeeds(mnemonic string, seedChan chan<- mySeed, accStart, accEnd int, stopChan <-chan struct{}) {
 	defer close(seedChan)
 	defer wg.Done()
-	for i := accIndexStart; i <= accIndexEnd; i++ {
+	for i := accStart; i <= accEnd; i++ {
 		select {
 		case <-stopChan:
 			return
