@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/iotaledger/iota.go/address"
-
 	"github.com/iotaledger/iota.go/kerl"
 
 	"github.com/tyler-smith/go-bip32"
@@ -22,79 +22,65 @@ var wg = sync.WaitGroup{}
 var scanner = bufio.NewScanner(os.Stdin)
 
 func main() {
-
-	// mnemonic := getMnemonic()
-	mnemonic := "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth" //targetAddr := "WNMNYMAOBGWPNFYZHSQHNXMOOIURFWAZUVVCNVZCKNKBH9XOGWUPFRWPSFAHBMMMZKXDJJGIOTERPSEUB" // addindex #3 accountindex #8
 	for {
-		targetAddr := getTargetAddress()
-		// targetAddr := "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
-		// targetAddr := "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
-		// targetAddr := "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
-		accStart := 0
-		accEnd := 1000
-		addrsPerSeed := 20
-		pageStart := 0
-		pageEnd := 0
+		settings := getSettings()
 		startTime := time.Now()
-		matchedIndex := getMatchingIndex(mnemonic, targetAddr, addrsPerSeed, accStart, accEnd, pageStart, pageEnd)
+		matchedIndex := getMatchingIndex(settings)
 		deltaT := time.Now().Sub(startTime)
 
 		if matchedIndex >= 0 {
 			fmt.Printf("\nFound matching address for ACCOUNT INDEX '%d' after %v.\n", matchedIndex, deltaT.Round(time.Second))
 			break
 		}
-		fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), addrsPerSeed, accStart, accEnd)
+		fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), settings.addrsPerSeed, settings.accStart, settings.accEnd)
 		if !again() {
-			break
+			return
 		}
-
 	}
 	fmt.Println("\nPress Enter to close the program.")
 	scanner.Scan()
 }
 
-func getMatchingIndex(mnemonic, targetAddr string, addrsPerSeed, accStart, accEnd, pageStart, pageEnd int) int {
+func getMatchingIndex(settings settings) int {
 
 	seedChan := make(chan mySeed)
 	stopChan := make(chan struct{}, 1)
 	workers := runtime.GOMAXPROCS(-1)
 	matchedIndex := -1
 	wg.Add(1)
-	go generateSeeds(mnemonic, seedChan, accStart, accEnd, stopChan)
-
+	go generateSeeds(settings, seedChan, stopChan)
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
-		go checkAddresses(targetAddr, seedChan, addrsPerSeed, &matchedIndex, stopChan)
+		go checkAddresses(settings, &matchedIndex, seedChan, stopChan)
 	}
-	fmt.Println("start searching")
+	fmt.Println("\nstart searching")
 	wg.Wait()
 	fmt.Println("\nstopped searching")
 	return matchedIndex
-
 }
 
-func generateSeeds(mnemonic string, seedChan chan<- mySeed, accStart, accEnd int, stopChan <-chan struct{}) {
+func generateSeeds(settings settings, seedChan chan<- mySeed, stopChan <-chan struct{}) {
 	defer close(seedChan)
 	defer wg.Done()
-	for i := accStart; i <= accEnd; i++ {
+	for i := settings.accStart; i <= settings.accEnd; i++ {
 		select {
 		case <-stopChan:
 			return
 		default:
 		}
-		seed := mySeed{mnemonicToSeed(mnemonic, i, 0), i, 0}
+		seed := mySeed{mnemonicToSeed(settings.mnemonic, i, 0), i, 0}
 		seedChan <- seed
 	}
 }
 
-func checkAddresses(targetAddr string, seedChan <-chan mySeed, addrsPerSeed int, matchedIndex *int, stopChan chan<- struct{}) {
+func checkAddresses(settings settings, matchedIndex *int, seedChan <-chan mySeed, stopChan chan<- struct{}) {
 	for seed := range seedChan {
-		addrs := getAddrsOfSeed(seed.string, addrsPerSeed)
+		addrs := getAddrsOfSeed(seed.string, settings.addrsPerSeed)
 		if seed.accountIndex%10 == 0 {
 			fmt.Printf("\rchecking index #%d", seed.accountIndex)
 		}
 		for _, addr := range addrs {
-			if strings.Contains(addr, targetAddr) {
+			if strings.Contains(addr, settings.targetAddr) {
 				*matchedIndex = int(seed.accountIndex)
 				stopChan <- struct{}{}
 			}
@@ -121,25 +107,41 @@ func mnemonicToSeed(mnemonic string, accountIndex, pageIndex int) string {
 	return trytes
 }
 
-func getTargetAddress() string {
+func getSettings() settings {
+	var settings = settings{}
+	settings.mnemonic = "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth"
+	settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9"
+	// settings.targetAddr = "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
+	// settings.targetAddr = "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
+	// settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
 
+	settings.accStart = 0
+	settings.accEnd = 100
+	settings.addrsPerSeed = 30
+	if len(os.Args) > 1 && os.Args[1] == "-t" {
+		return settings
+	}
+	getMnemonic(&settings)
+	getTargetAddress(&settings)
+	getAddrsPerSeed(&settings)
+	return settings
+}
+
+func getTargetAddress(settings *settings) {
 	var addr string
 	for {
-		fmt.Print("Enter target address: ")
+		fmt.Printf("Enter target address: ")
 		scanner.Scan()
 		addr = scanner.Text()
-		fmt.Println()
 		if err := address.ValidAddress(addr); err == nil {
 			break
 		}
 		fmt.Println("\n\nInvalid address entered.")
 	}
-
-	return addr[0:81]
+	settings.targetAddr = addr[0:81]
 }
 
-func getMnemonic() string {
-
+func getMnemonic(settings *settings) {
 	var words [24]string
 	i := 1
 	for i <= 24 {
@@ -152,15 +154,29 @@ func getMnemonic() string {
 			i++
 
 		} else {
-			fmt.Printf("'%v' is not a valid BIP 44 word. Try again.\n", word)
+			fmt.Printf("'%v' is not a valid BIP39 word. Try again.\n", word)
 		}
-
 	}
-	return strings.Join(words[:], " ")
+	settings.mnemonic = strings.Join(words[:], " ")
+}
+
+func getAddrsPerSeed(settings *settings) {
+	for {
+		fmt.Printf("Enter number of addresses to test per seed (press Enter for default=%d): ", settings.addrsPerSeed)
+		scanner.Scan()
+		input := scanner.Text()
+		if input == "" {
+			return
+		}
+		if addrs, err := strconv.Atoi(input); err == nil {
+			settings.addrsPerSeed = addrs
+			return
+		}
+		fmt.Println("Invalid input!")
+	}
 }
 
 func again() bool {
-
 	fmt.Print("\nDo you want to try again using the same 24 words (y/n)?: ")
 	scanner.Scan()
 	answer := scanner.Text()
@@ -170,6 +186,7 @@ func again() bool {
 	}
 	return false
 }
+
 func isValidWord(word string) bool {
 	_, valid := bip39.GetWordIndex(word)
 	return valid
@@ -183,4 +200,9 @@ func getAddrsOfSeed(seed string, addCount int) []string {
 type mySeed struct {
 	string                  string
 	accountIndex, pageIndex int
+}
+
+type settings struct {
+	mnemonic, targetAddr                               string
+	accStart, accEnd, pageStart, pageEnd, addrsPerSeed int
 }
