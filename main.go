@@ -131,7 +131,7 @@ func getSettings() settings {
 
 	settings.accStart = 0
 	settings.accEnd = 1000
-	settings.addrsPerSeed = 50
+	settings.addrsPerSeed = 20
 	if !cliArgsHas("-sm") {
 		getMnemonic(&settings)
 	}
