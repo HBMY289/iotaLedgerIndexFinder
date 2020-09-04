@@ -1,6 +1,6 @@
 # iotaLedgerIndexFinder
 
-I mainly wrote this tool to learn about programming in general and golang in specific. I am also using it as an exercise to become acquainted with git and github. However, I am sure there are a lot of people that might actually profit from using this tool.  
+I mainly wrote this tool to learn about programming in general and golang in specific. I am also using it as an exercise to become acquainted with git and github. However, I am sure there are a few of people that might actually profit from using this tool.  
 
 ## What this tool does
 When using a Ledger hardware wallet to secure your Iota tokens the actual Iota seed is calculated based on the 24-word recovery phrase and an index value you chose when you set up the account in the Trinity wallet. Every index value will generate a completely independent seed and only the correct value will give access to your funds. This tool enables Iota token holders to gain access to their funds again if they do no remember the account index anymore.
