@@ -25,7 +25,7 @@ func main() {
 	for {
 		settings := getSettings()
 		startTime := time.Now()
-		matchedIndex := getMatchingIndex2(settings)
+		matchedIndex := getMatchingIndex(settings)
 		deltaT := time.Now().Sub(startTime)
 
 		if matchedIndex >= 0 {
@@ -41,10 +41,11 @@ func main() {
 	scanner.Scan()
 }
 
-func getMatchingIndex2(settings settings) int {
+func getMatchingIndex(settings settings) int {
 	input := make(chan accPage)
 	result := -1
-	workers := 1000
+	workers := runtime.GOMAXPROCS(-1)
+	fmt.Println("\nstart searching")
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go checkCandidate(input, settings, &result)
@@ -56,19 +57,21 @@ L:
 			if result >= 0 {
 				break L
 			}
-
 			candidate := accPage{i, j}
 			input <- candidate
-
 		}
 	}
 	close(input)
 	wg.Wait()
+	fmt.Println("\nstopped searching")
 	return result
 }
 
 func checkCandidate(input <-chan accPage, settings settings, result *int) {
 	for candidate := range input {
+		if candidate.acc%10 == 0 {
+			fmt.Printf("\rchecking index #%d", candidate.acc)
+		}
 		seed := mnemonicToSeed(settings.mnemonic, candidate.acc, candidate.page)
 		addrs := getAddrsOfSeed(seed, settings.addrsPerSeed)
 		for _, addr := range addrs {
@@ -78,38 +81,6 @@ func checkCandidate(input <-chan accPage, settings settings, result *int) {
 		}
 	}
 	wg.Done()
-}
-
-func getMatchingIndex(settings settings) int {
-
-	seedChan := make(chan mySeed, 2)
-	stopChan := make(chan struct{}, 1)
-	workers := runtime.GOMAXPROCS(-1)
-	matchedIndex := -1
-	wg.Add(1)
-	go generateSeeds(settings, seedChan, stopChan)
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-		go checkAddresses(settings, &matchedIndex, seedChan, stopChan)
-	}
-	fmt.Println("\nstart searching")
-	wg.Wait()
-	fmt.Println("\nstopped searching")
-	return matchedIndex
-}
-
-func generateSeeds(settings settings, seedChan chan<- mySeed, stopChan <-chan struct{}) {
-	defer close(seedChan)
-	defer wg.Done()
-	for i := settings.accStart; i <= settings.accEnd; i++ {
-		select {
-		case <-stopChan:
-			return
-		default:
-		}
-		seed := mySeed{mnemonicToSeed(settings.mnemonic, i, 0), i, 0}
-		seedChan <- seed
-	}
 }
 
 func checkAddresses(settings settings, matchedIndex *int, seedChan <-chan mySeed, stopChan chan<- struct{}) {
@@ -149,15 +120,14 @@ func mnemonicToSeed(mnemonic string, accountIndex, pageIndex int) string {
 func getSettings() settings {
 	var settings = settings{}
 	settings.mnemonic = "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth"
-	settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYFA"
-	// settings.targetAddr = "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
+	settings.targetAddr = "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC" // will not be found
 	// settings.targetAddr = "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
 	// settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
 
 	settings.accStart = 0
 	settings.accEnd = 1000
 	settings.addrsPerSeed = 50
-	if len(os.Args) > 1 && os.Args[1] == "-t" {
+	if cliArgsHas("-t") {
 		return settings
 	}
 	getMnemonic(&settings)
@@ -165,7 +135,19 @@ func getSettings() settings {
 	getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
 	getIntInput(&settings.accStart, "Enter account index start")
 	getIntInput(&settings.accEnd, "Enter account index stop")
+	if len(os.Args) > 1 && os.Args[1] == "-p" {
+		return settings
+	}
 	return settings
+}
+
+func cliArgsHas(wantedArg string) bool {
+	for _, arg := range os.Args {
+		if arg == wantedArg {
+			return true
+		}
+	}
+	return false
 }
 
 func getTargetAddress(settings *settings) {
