@@ -25,11 +25,15 @@ func main() {
 	for {
 		settings := getSettings()
 		startTime := time.Now()
-		matchedIndex := getMatchingIndex(settings)
+		matchedAccPage := getMatchingIndex(settings)
 		deltaT := time.Now().Sub(startTime)
 
-		if matchedIndex >= 0 {
-			fmt.Printf("\nFound matching address for ACCOUNT INDEX '%d' after %v.\n", matchedIndex, deltaT.Round(time.Second))
+		if matchedAccPage.acc >= 0 {
+			var pageText string
+			if cliArgsHas("-p") {
+				pageText = fmt.Sprintf(" and PAGE INDEX '%d'", matchedAccPage.page)
+			}
+			fmt.Printf("\nFound matching address for ACCOUNT INDEX '%d'%v after %v.\n", matchedAccPage.acc, pageText, deltaT.Round(time.Second))
 			break
 		}
 		fmt.Printf("\nCould not find a match after %v testing the first %d addresses of indexes %d to %d.\nCheck target address or retry with larger values for maximum index and addresses per seed.", deltaT.Round(time.Second), settings.addrsPerSeed, settings.accStart, settings.accEnd)
@@ -41,9 +45,9 @@ func main() {
 	scanner.Scan()
 }
 
-func getMatchingIndex(settings settings) int {
+func getMatchingIndex(settings settings) accPage {
 	input := make(chan accPage)
-	result := -1
+	result := accPage{-1, -1}
 	workers := runtime.GOMAXPROCS(-1)
 	fmt.Println("\nstart searching")
 	for i := 0; i < workers; i++ {
@@ -54,7 +58,7 @@ L:
 	for i := settings.accStart; i <= settings.accEnd; i++ {
 		for j := settings.pageStart; j <= settings.pageEnd; j++ {
 
-			if result >= 0 {
+			if result.acc >= 0 {
 				break L
 			}
 			candidate := accPage{i, j}
@@ -67,16 +71,17 @@ L:
 	return result
 }
 
-func checkCandidate(input <-chan accPage, settings settings, result *int) {
+func checkCandidate(input <-chan accPage, settings settings, result *accPage) {
 	for candidate := range input {
-		if candidate.acc%10 == 0 {
+
+		if candidate.page == settings.pageStart {
 			fmt.Printf("\rchecking index #%d", candidate.acc)
 		}
 		seed := mnemonicToSeed(settings.mnemonic, candidate.acc, candidate.page)
 		addrs := getAddrsOfSeed(seed, settings.addrsPerSeed)
 		for _, addr := range addrs {
 			if strings.Contains(addr, settings.targetAddr) {
-				*result = candidate.acc
+				*result = candidate
 			}
 		}
 	}
@@ -127,16 +132,17 @@ func getSettings() settings {
 	settings.accStart = 0
 	settings.accEnd = 1000
 	settings.addrsPerSeed = 50
-	if cliArgsHas("-t") {
-		return settings
+	if !cliArgsHas("-t") {
+		getMnemonic(&settings)
+		getTargetAddress(&settings)
+		getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
+		getIntInput(&settings.accStart, "Enter account index start")
+		getIntInput(&settings.accEnd, "Enter account index stop")
 	}
-	getMnemonic(&settings)
-	getTargetAddress(&settings)
-	getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
-	getIntInput(&settings.accStart, "Enter account index start")
-	getIntInput(&settings.accEnd, "Enter account index stop")
-	if len(os.Args) > 1 && os.Args[1] == "-p" {
-		return settings
+
+	if cliArgsHas("-p") {
+		getIntInput(&settings.pageStart, "Enter page index start")
+		getIntInput(&settings.pageEnd, "Enter page index stop")
 	}
 	return settings
 }
