@@ -1,6 +1,6 @@
 # iotaLedgerIndexFinder
 
-I mainly wrote this tool to learn about programming in general and golang in specific. I am also using it as an exercise to get myself acqauinted with git and github. However, I spend a lot of time supporting users in the official Iota Discord help channel and came across a few users that might actually profit from using this tool.  
+I mainly wrote this tool to learn about programming in general and golang in specific. I am also using it as an exercise to become acquainted with git and github. However, I am sure there are a lot of people that might actually profit from using this tool.  
 
 ## What this tool does
 When using a Ledger hardware wallet to secure your Iota tokens the actual Iota seed is calculated based on the 24-word recovery phrase and an index value you chose when you set up the account in the Trinity wallet. Every index value will generate a completely independent seed and only the correct value will give access to your funds. This tool enables Iota token holders to gain access to their funds again if they do no remember the account index anymore.
@@ -28,4 +28,11 @@ Enter the number of addresses that should be generated for each calculated seed.
 
 ##### The game is on
 The program now starts the seed and address generation and reports the current status. Once a match is found it will automatically stop and report the found account index. Depending on the hardware you use the tool can check about 1000 account indexes per minute or even more. 
+
+## Disclaimer
+Thanks go ot to [Tyler Smith](https://github.com/tyler-smith) for providing the used cryptography libraries and to [muXxer](https://github.com/muXxer) as I learned from one of his Python projects how to actually [calculate the seed from the recovery phrase](https://github.com/muXxer/recover-iota-seed-from-ledger-mnemonics).
+
+If you need any help with this tool or require specific customizations you can contact me (HBMY289) via the official [Iota Discord server](https://discord.iota.org/).
+
+
 
