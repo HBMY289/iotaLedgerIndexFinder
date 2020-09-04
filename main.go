@@ -25,7 +25,7 @@ func main() {
 	for {
 		settings := getSettings()
 		startTime := time.Now()
-		matchedIndex := getMatchingIndex(settings)
+		matchedIndex := getMatchingIndex2(settings)
 		deltaT := time.Now().Sub(startTime)
 
 		if matchedIndex >= 0 {
@@ -39,6 +39,45 @@ func main() {
 	}
 	fmt.Println("\nPress Enter to close the program.")
 	scanner.Scan()
+}
+
+func getMatchingIndex2(settings settings) int {
+	input := make(chan accPage)
+	result := -1
+	workers := 1000
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go checkCandidate(input, settings, &result)
+	}
+L:
+	for i := settings.accStart; i <= settings.accEnd; i++ {
+		for j := settings.pageStart; j <= settings.pageEnd; j++ {
+
+			if result >= 0 {
+				break L
+			}
+
+			candidate := accPage{i, j}
+			input <- candidate
+
+		}
+	}
+	close(input)
+	wg.Wait()
+	return result
+}
+
+func checkCandidate(input <-chan accPage, settings settings, result *int) {
+	for candidate := range input {
+		seed := mnemonicToSeed(settings.mnemonic, candidate.acc, candidate.page)
+		addrs := getAddrsOfSeed(seed, settings.addrsPerSeed)
+		for _, addr := range addrs {
+			if strings.Contains(addr, settings.targetAddr) {
+				*result = candidate.acc
+			}
+		}
+	}
+	wg.Done()
 }
 
 func getMatchingIndex(settings settings) int {
@@ -110,14 +149,14 @@ func mnemonicToSeed(mnemonic string, accountIndex, pageIndex int) string {
 func getSettings() settings {
 	var settings = settings{}
 	settings.mnemonic = "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth"
-	settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9"
+	settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYFA"
 	// settings.targetAddr = "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"                                                                               // addindex #8 acc index #98
 	// settings.targetAddr = "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
 	// settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
 
 	settings.accStart = 0
 	settings.accEnd = 1000
-	settings.addrsPerSeed = 20
+	settings.addrsPerSeed = 50
 	if len(os.Args) > 1 && os.Args[1] == "-t" {
 		return settings
 	}
@@ -207,4 +246,8 @@ type mySeed struct {
 type settings struct {
 	mnemonic, targetAddr                               string
 	accStart, accEnd, pageStart, pageEnd, addrsPerSeed int
+}
+
+type accPage struct {
+	acc, page int
 }
