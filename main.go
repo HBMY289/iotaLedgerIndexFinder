@@ -125,20 +125,22 @@ func mnemonicToSeed(mnemonic string, accountIndex, pageIndex int) string {
 func getSettings() settings {
 	var settings = settings{}
 	settings.mnemonic = "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth"
-	settings.targetAddr = "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC" // will not be found
+	// settings.targetAddr = "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC" // will not be found
 	// settings.targetAddr = "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
-	// settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
+	settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
 
 	settings.accStart = 0
 	settings.accEnd = 1000
 	settings.addrsPerSeed = 50
-	if !cliArgsHas("-t") {
+	if !cliArgsHas("-sm") {
 		getMnemonic(&settings)
-		getTargetAddress(&settings)
-		getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
-		getIntInput(&settings.accStart, "Enter account index start")
-		getIntInput(&settings.accEnd, "Enter account index stop")
 	}
+	if !cliArgsHas("-st") {
+		getTargetAddress(&settings)
+	}
+	getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
+	getIntInput(&settings.accStart, "Enter account index start")
+	getIntInput(&settings.accEnd, "Enter account index stop")
 
 	if cliArgsHas("-p") {
 		getIntInput(&settings.pageStart, "Enter page index start")
@@ -181,7 +183,6 @@ func getMnemonic(settings *settings) {
 		if isValidWord(word) {
 			words[i-1] = word
 			i++
-
 		} else {
 			fmt.Printf("'%v' is not a valid BIP39 word. Try again.\n", word)
 		}
