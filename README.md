@@ -12,7 +12,7 @@ The program requires you to enter the 24 word secret passphrase and any address 
 You should never share your seed or your 24-word recovery phrase with anyone. If anybody asks for this kind of information it is definitely a scam no matter who they claim to be. You should also never enter this sensitive information in any software that you do not trust. However, since you probably do not have much reason to trust me as well I recommend reducing your risk by running this program on an air-gapped/offline computer. This way no malicious party including myself could get hold of your secret words. Once the correct index is found you should use another device to access and transfer your funds to a new seed. After that you should completely reset your Ledger device to generate a new 24-word recovery phrase (be careful if you also use the device to store other tokens).
 
 ## How to use the tool
-The simplest way is to download and start the appropriate binary executable for your operating system from (TODO add link to releases). Once it is running you will have to enter the required information to find your account index.
+The simplest way is to download and start the appropriate binary executable for your operating system from [releases](https://github.com/HBMY289/iotaLedgerIndexFinder/releases). Once it is running you will have to enter the required information to find your account index.
 
 ##### Mnemonic
 Enter your 24 recovery words that are required to calculate the seeds. The words have to be entered one-by-one and are automatically checked against the BIP39 word list, so no typos will happen.
@@ -20,7 +20,7 @@ Enter your 24 recovery words that are required to calculate the seeds. The words
 ##### Target address
 Enter any address that was generated from the seed you are looking for. It can be an old address that you might find in your exchange's withdrawal history or a current one that you wrote down somewhere. It is OK if there is no balance on this address.
 
-##### Address per seed
+##### Addresses per seed
 Enter the number of addresses that should be generated for each calculated seed. You can press Enter to use the default of 20. If you used your seed a lot for sending or generated a lot of different receive address you might want to increase this value to make sure your entered target address will be found. Generating addresses is a time consuming step, so entering a high number here will result in a lower number of account indexes that can be tested per second.
 
 ##### Account index search range
