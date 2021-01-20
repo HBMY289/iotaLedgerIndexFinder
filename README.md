@@ -54,7 +54,7 @@ The program now starts the seed and address generation and reports the current s
 It would be possible to check all generated addresses against the tangle and check for balance, but you would need to be online for that. I added a special option for this case that will require a snapshot file with all addresses and their current balances.
 You will need to ask someone who runs a Iota node to run this command
 ```
-curl -H 'X-IOTA-API-VERSION: 1' -d '{"command":"getLedgerState" , "threshold":100}' localhost:14265 >  snapshot.txt
+curl -H 'X-IOTA-API-VERSION: 1' -d '{"command":"getLedgerState"}' localhost:14265 >  snapshot.txt
 ```
 and send you the resulting file "snapshot.txt".
 Place this file in the same folder as your IotaLedgerIndexFinder executable and start the program with the snapshot option "-s" like this:
