@@ -3,7 +3,9 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
@@ -79,26 +81,15 @@ func checkCandidate(input <-chan accPage, settings settings, result *accPage) {
 		}
 		seed := mnemonicToSeed(settings.mnemonic, candidate.acc, candidate.page)
 		addrs := getAddrsOfSeed(seed, settings.addrsPerSeed)
-		for _, addr := range addrs {
-			if strings.Contains(addr, settings.targetAddr) {
-				*result = candidate
-			}
-		}
-	}
-	wg.Done()
-}
 
-func checkAddresses(settings settings, matchedIndex *int, seedChan <-chan mySeed, stopChan chan<- struct{}) {
-	for seed := range seedChan {
-		addrs := getAddrsOfSeed(seed.string, settings.addrsPerSeed)
-		if seed.accountIndex%10 == 0 {
-			fmt.Printf("\rchecking index #%d", seed.accountIndex)
-		}
 		for _, addr := range addrs {
-			if strings.Contains(addr, settings.targetAddr) {
-				*matchedIndex = int(seed.accountIndex)
-				stopChan <- struct{}{}
+			for _, targetAddr := range settings.targetAddr {
+				if strings.Contains(addr, targetAddr) {
+					*result = candidate
+					break
+				}
 			}
+
 		}
 	}
 	wg.Done()
@@ -125,17 +116,24 @@ func mnemonicToSeed(mnemonic string, accountIndex, pageIndex int) string {
 func getSettings() settings {
 	var settings = settings{}
 	settings.mnemonic = "wheel mosquito enroll illness stamp vote tomorrow mandate powder armed fortune buffalo rack mirror elder fun paper between cheap present vast unlock detect birth"
-	// settings.targetAddr = "SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC" // will not be found
-	// settings.targetAddr = "CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ" //addindex #1 accindex 9
-	settings.targetAddr = "JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9" //addindex #2 accountindex 99
+	// settings.targetAddr = []string{"SZE9WDWHUUYGOXQRMZWKHFHSQCVU9NROSNFERAJMT9YFIHHRCKRFSDESFWDPCLPMJFFXLXZISLWKBSKTC"} // will not be found
+	// settings.targetAddr = []string{"CRICOFALQY9XBDSPOJAID9TMKMUNYWVN99WEUFOTCNBYZCNALGUCDDMQTHYWZVFMNWBYGBBBDUWKJPAFZ"} //addindex #1 accindex #9
+	// settings.targetAddr = []string{"JWTWV9KLWZRORTCQGBHEYZFQLZUIGLGJASFDGQOKAVSYIBKOGONQDZZTLM9IYE9GVBTPBSXEWLIDBQYF9"} //addindex #2 accountindex #99
+	// settings.targetAddr = []string{"IMRMBIOYEMBT9MHGDHFJXPBXCQEIE9QUCFFMPMQE9YCTKEUZPHVHPGYC9THLGDARGIOZUFBFKYDDZWMPZ"}  // addindex #3 accindex #50 with balance
+	settings.targetAddr = []string{"HHQABKTNV9DDDBCPBFVFKGYLXAAUMMSYOTHSQJUWV9JMFYHRXVEPNCRDNOLINQ9RADCTPZDSEBNJZETOD"} // addindex #4 accindex #9 pageindex #9 with balance
 
 	settings.accStart = 0
 	settings.accEnd = 1000
-	settings.addrsPerSeed = 20
+	settings.addrsPerSeed = 100
+
+	if cliArgsHas("-s") {
+		getAddressesFromSnapshot(&settings)
+	}
+
 	if !cliArgsHas("-sm") {
 		getMnemonic(&settings)
 	}
-	if !cliArgsHas("-st") {
+	if !cliArgsHas("-st") && !cliArgsHas("-s") {
 		getTargetAddress(&settings)
 	}
 	getIntInput(&settings.addrsPerSeed, "Enter number of addresses to test per seed")
@@ -143,9 +141,11 @@ func getSettings() settings {
 	getIntInput(&settings.accEnd, "Enter account index stop")
 
 	if cliArgsHas("-p") {
+		settings.pageEnd = 10
 		getIntInput(&settings.pageStart, "Enter page index start")
 		getIntInput(&settings.pageEnd, "Enter page index stop")
 	}
+
 	return settings
 }
 
@@ -169,7 +169,7 @@ func getTargetAddress(settings *settings) {
 		}
 		fmt.Println("\n\nInvalid address entered.")
 	}
-	settings.targetAddr = addr[0:81]
+	settings.targetAddr = []string{addr[0:81]}
 }
 
 func getMnemonic(settings *settings) {
@@ -206,6 +206,31 @@ func getIntInput(value *int, text string) {
 	}
 
 }
+
+func getAddressesFromSnapshot(settings *settings) {
+	snapFile := "snapshot.txt"
+	data, err := ioutil.ReadFile(snapFile)
+	if err != nil {
+		fmt.Printf("Could not open snapshot file. Make sure %s is available in the same folder.\n", snapFile)
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	var snapshot Snapshot
+	json.Unmarshal([]byte(data), &snapshot)
+	keys := make([]string, 0, len(snapshot.Balances))
+	for key := range snapshot.Balances {
+		keys = append(keys, key)
+	}
+
+	if len(keys) == 0 {
+		fmt.Println("Could not read addresses from snapshot file!", err)
+		os.Exit(1)
+	}
+	fmt.Printf("\nSuccessfully read %d addresses from snapshot file.\n", len(keys))
+	settings.targetAddr = keys
+	return
+}
+
 func again() bool {
 	fmt.Print("\nDo you want to try again using the same 24 words (y/n)?: ")
 	scanner.Scan()
@@ -233,10 +258,17 @@ type mySeed struct {
 }
 
 type settings struct {
-	mnemonic, targetAddr                               string
+	mnemonic                                           string
+	targetAddr                                         []string
 	accStart, accEnd, pageStart, pageEnd, addrsPerSeed int
 }
 
 type accPage struct {
 	acc, page int
+}
+
+type Snapshot struct {
+	Balances       map[string]uint64 `json:"balances"`
+	MilestoneIndex uint64
+	Duration       int `json:"duration"`
 }
