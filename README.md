@@ -50,6 +50,23 @@ Enter the number of addresses that should be generated for each calculated seed.
 ##### The game is on
 The program now starts the seed and address generation and reports the current status. Once a match is found it will automatically stop and report the found account index. Depending on the hardware you use the tool can check 1000 account indexes per minute or even more. 
 
+## What to do if no address of the seed is known?
+It would be possible to check all generated addresses against the tangle and check for balance, but you would need to be online for that. I added a special option for this case that will require a snapshot file with all addresses and their current balances.
+You will need to ask someone who runs a Iota node to run this command
+```
+curl -H 'X-IOTA-API-VERSION: 1' -d '{"command":"getLedgerState" , "threshold":100}' localhost:14265 >  snapshot.txt
+```
+and send you the resulting file "snapshot.txt".
+Place this file in the same folder as your IotaLedgerIndexFinder executable and start the program with the snapshot option "-s" like this:
+```
+./iotaLedgerIndexFinder -s
+```
+or on Windows
+```
+iotaLedgerIndexFinder.exe -s
+```
+
+
 ## Disclaimer
 Thanks go ot to [Tyler Smith](https://github.com/tyler-smith) for providing the used cryptography libraries and to [muXxer](https://github.com/muXxer) as I learned from one of his Python projects how to actually [calculate the seed from the recovery phrase](https://github.com/muXxer/recover-iota-seed-from-ledger-mnemonics).
 
