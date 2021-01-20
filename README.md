@@ -11,8 +11,29 @@ The program requires you to enter the 24 word secret passphrase and any address 
 # Warning
 You should never share your seed or your 24-word recovery phrase with anyone. If anybody asks for this kind of information it is definitely a scam no matter who they claim to be. You should also never enter this sensitive information in any software that you do not trust. However, since you probably do not have much reason to trust me as well I recommend reducing your risk by running this program on an air-gapped/offline computer. This way no malicious party including myself could get hold of your secret words. Once the correct index is found you should use another device to access and transfer your funds to a new seed. After that you should completely reset your Ledger device to generate a new 24-word recovery phrase (be careful if you also use the device to store other tokens).
 
+## How to start the tool
+The simplest way is to download the appropriate binary executable for your operating system from [releases](https://github.com/HBMY289/iotaLedgerIndexFinder/releases) and then start it. You can also build the tool from source, which is rather easy as well. Assuming you have [go](https://golang.org/doc/install) and [git](https://www.atlassian.com/git/tutorials/install-git) installed already you can just execute this command for example in your user folder to get a copy of the source code.
+```
+git clone https://github.com/HBMY289/iotaLedgerIndexFinder.git
+```
+
+Then you change into the new folder and build the excutable.
+```
+cd iotaLedgerIndexFinder
+go build
+```
+After that you can just start the newly created binary file by typing
+```
+./iotaLedgerIndexFinder
+```
+or on Windows
+```
+iotaLedgerIndexFinder.exe
+```
+
+
 ## How to use the tool
-The simplest way is to download and start the appropriate binary executable for your operating system from [releases](https://github.com/HBMY289/iotaLedgerIndexFinder/releases). Once it is running you will have to enter the required information to find your account index.
+Once the program is running you will have to enter the required information to find your account index.
 
 ##### Mnemonic
 Enter your 24 recovery words that are required to calculate the seeds. The words have to be entered one-by-one and are automatically checked against the BIP39 word list, so no typos will happen.
