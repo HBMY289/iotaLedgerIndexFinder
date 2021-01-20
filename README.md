@@ -51,7 +51,7 @@ Enter the number of addresses that should be generated for each calculated seed.
 The program now starts the seed and address generation and reports the current status. Once a match is found it will automatically stop and report the found account index. Depending on the hardware you use the tool can check 1000 account indexes per minute or even more. 
 
 ## What to do if no address of the seed is known?
-It would be possible to check all generated addresses against the tangle and check for balance, but you would need to be online for that. I added a special option for this case that will require a snapshot file with all addresses and their current balances.
+It would be possible to check all generated addresses against the tangle and check for balance, but you would need to be online for that. To avoid this and enable running the tool offline I added a special option for this case that matches addresses against a tangle snapshot file with all addresses and their current balances.
 You will need to ask someone who runs a Iota node to run this command
 ```
 curl -H 'X-IOTA-API-VERSION: 1' -d '{"command":"getLedgerState"}' localhost:14265 >  snapshot.txt
@@ -65,6 +65,7 @@ or on Windows
 ```
 iotaLedgerIndexFinder.exe -s
 ```
+
 
 
 ## Disclaimer
